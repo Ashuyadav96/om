@@ -762,7 +762,7 @@ async def openai_stream(body: dict, model: str, conversation_id: Optional[str] =
                 output += c[c.find("</think>") + 8:]
             elif not in_think and "<think>" not in c:
                 output = c
-            if not output or in_think:
+            if not output:
                 continue
             full_content += output
             yield f"data: {json.dumps({'id': chat_id, 'object': 'chat.completion.chunk', 'created': created, 'model': model, 'choices': [{'index': 0, 'delta': {'content': output}, 'finish_reason': None}]})}\n\n"
@@ -845,10 +845,9 @@ async def anthropic_stream(body: dict, model: str):
                 output += c[c.find("</think>") + 8:]
             elif not in_think and "<think>" not in c:
                 output = c
-            if not output or in_think:
+            if not output:
                 continue
-            if output:
-                yield f"event: content_block_delta\ndata: {json.dumps({'type': 'content_block_delta', 'index': 0, 'delta': {'type': 'text_delta', 'text': output}})}\n\n"
+            yield f"event: content_block_delta\ndata: {json.dumps({'type': 'content_block_delta', 'index': 0, 'delta': {'type': 'text_delta', 'text': output}})}\n\n"
         if "completionTokens" in data:
             output_tokens = data.get("completionTokens", 0)
 
