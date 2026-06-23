@@ -1,7 +1,7 @@
 [project]
 name = "mimo-proxy"
-version = "2.0.0"
-description = "OpenAI + Anthropic compatible API proxy for Xiaomi MiMo AI Studio"
+version = "3.0.0"
+description = "Advanced multi-language OpenAI + Anthropic + Gemini compatible API proxy for Xiaomi MiMo AI Studio"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.115.0",
