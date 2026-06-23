@@ -204,7 +204,7 @@ SUPPORTED_LANGUAGES = {
     "mk": {"name": "Macedonian", "native": "Македонски", "system_prompt": "Одговорете на македонски."},
     "bs": {"name": "Bosnian", "native": "Bosanski", "system_prompt": "Odgovorite na bosanskom."},
     "ka": {"name": "Georgian", "native": "ქართული", "system_prompt": "უპასუხეთ ქართულად."},
-    "hy": {"name": "Armenian", "native": "Հայերեն", "system_prompt": "Պատասխdelays հայերեադdelays."},
+    "hy": {"name": "Armenian", "native": "Հայերեն", "system_prompt": "Պատասխանեք հայերենով."},
     "az": {"name": "Azerbaijani", "native": "Azərbaycan", "system_prompt": "Azərbaycan dilində cavab verin."},
     "uz": {"name": "Uzbek", "native": "O'zbek", "system_prompt": "O'zbek tilida javob bering."},
     "kk": {"name": "Kazakh", "native": "Қазақ", "system_prompt": "Қazağşa jawap beriñiz."},
@@ -465,15 +465,20 @@ def parse_think(full_text: str):
     text = full_text.replace("\x00", "")
     if "<think>" not in text:
         return text, ""
-    start = text.find("<think>") + 7
+    think_start = text.find("<think>")
+    before = text[:think_start]
+    inner_start = think_start + 7
     end = text.find("</think>")
     if end != -1:
-        return text[end + 8:].strip(), text[start:end].strip()
-    return "", text[start:].strip()
+        think_content = text[inner_start:end].strip()
+        after = text[end + 8:]
+        return (before + after).strip(), think_content
+    return before.strip(), text[inner_start:].strip()
 
 
-def cache_key(model: str, query: str) -> str:
-    return hashlib.md5(f"{model}:{query}".encode()).hexdigest()
+def cache_key(model: str, query: str, temperature: float = 0.8, top_p: float = 0.95, thinking: bool = False, web_search: str = "disabled") -> str:
+    raw = f"{model}:{query}:{temperature}:{top_p}:{thinking}:{web_search}"
+    return hashlib.md5(raw.encode()).hexdigest()
 
 
 async def call_mimo_stream(body: dict):
@@ -684,9 +689,10 @@ async def chat_completions(request: ChatCompletionRequest):
 
     # Check cache
     if request.cache and not request.stream:
-        ck = cache_key(request.model, query)
+        ck = cache_key(request.model, query, request.temperature, request.top_p, request.thinking, request.web_search)
         cached = _cache.get(ck)
         if cached:
+            cached = {**cached}
             cached["id"] = f"chatcmpl-{uuid.uuid4().hex[:12]}"
             cached["cached"] = True
             return JSONResponse(content=cached)
@@ -724,7 +730,7 @@ async def chat_completions(request: ChatCompletionRequest):
 
     # Cache result
     if request.cache:
-        _cache.set(cache_key(request.model, query), result)
+        _cache.set(cache_key(request.model, query, request.temperature, request.top_p, request.thinking, request.web_search), result)
 
     return JSONResponse(content=result)
 
@@ -747,18 +753,19 @@ async def openai_stream(body: dict, model: str, conversation_id: Optional[str] =
             c = data.get("content", "").replace("\x00", "")
             if not c:
                 continue
+            output = ""
             if "<think>" in c:
+                output += c[:c.find("<think>")]
                 in_think = True
-                continue
             if "</think>" in c:
                 in_think = False
-                c = c.replace("</think>", "")
-                if not c:
-                    continue
-            if in_think:
+                output += c[c.find("</think>") + 8:]
+            elif not in_think and "<think>" not in c:
+                output = c
+            if not output or in_think:
                 continue
-            full_content += c
-            yield f"data: {json.dumps({'id': chat_id, 'object': 'chat.completion.chunk', 'created': created, 'model': model, 'choices': [{'index': 0, 'delta': {'content': c}, 'finish_reason': None}]})}\n\n"
+            full_content += output
+            yield f"data: {json.dumps({'id': chat_id, 'object': 'chat.completion.chunk', 'created': created, 'model': model, 'choices': [{'index': 0, 'delta': {'content': output}, 'finish_reason': None}]})}\n\n"
 
         elif data.get("content") == "[DONE]":
             yield f"data: {json.dumps({'id': chat_id, 'object': 'chat.completion.chunk', 'created': created, 'model': model, 'choices': [{'index': 0, 'delta': {}, 'finish_reason': 'stop'}]})}\n\n"
@@ -829,18 +836,19 @@ async def anthropic_stream(body: dict, model: str):
             c = data.get("content", "").replace("\x00", "")
             if not c:
                 continue
+            output = ""
             if "<think>" in c:
+                output += c[:c.find("<think>")]
                 in_think = True
-                continue
             if "</think>" in c:
                 in_think = False
-                c = c.replace("</think>", "")
-                if not c:
-                    continue
-            if in_think:
+                output += c[c.find("</think>") + 8:]
+            elif not in_think and "<think>" not in c:
+                output = c
+            if not output or in_think:
                 continue
-            if c:
-                yield f"event: content_block_delta\ndata: {json.dumps({'type': 'content_block_delta', 'index': 0, 'delta': {'type': 'text_delta', 'text': c}})}\n\n"
+            if output:
+                yield f"event: content_block_delta\ndata: {json.dumps({'type': 'content_block_delta', 'index': 0, 'delta': {'type': 'text_delta', 'text': output}})}\n\n"
         if "completionTokens" in data:
             output_tokens = data.get("completionTokens", 0)
 
@@ -1047,4 +1055,4 @@ async def get_config():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000, workers=4)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
