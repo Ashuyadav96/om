@@ -1,0 +1,27 @@
+# Frontend Client Dockerfile
+FROM node:18-alpine AS base
+
+# Install dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json ./
+COPY src/client/package.json ./src/client/package.json
+COPY src/shared/package.json ./src/shared/package.json
+RUN npm install
+
+# Build the application
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+RUN npm run build:client
+
+# Production image
+FROM base AS production
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src/client/.next ./.next
+COPY --from=builder /app/src/client/public ./public
+COPY --from=builder /app/package.json ./
+
+EXPOSE 3000
+CMD ["npm", "start"]

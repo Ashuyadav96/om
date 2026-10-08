@@ -1,0 +1,230 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User Management
+// ============================================
+
+model User {
+  id            String    @id @default(cuid())
+  clerkId       String    @unique
+  email         String?
+  username      String?
+  fullName      String?
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  userSessions  UserSession[]
+
+  @@index([clerkId])
+}
+
+// ============================================
+// API Keys for AI Agents
+// ============================================
+
+model ApiKey {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      String    // 'anthropic', 'openai', 'huggingface', etc.
+  keyName       String    // User-defined name for the key
+  keyValue     String    // Encrypted at rest
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, provider, keyName])
+  @@index([userId, provider])
+}
+
+// ============================================
+// Sessions
+// ============================================
+
+model Session {
+  id            String    @id @default(cuid())
+  name          String
+  creatorId     String
+  creator       User      @relation(fields: [creatorId], references: [id])
+  currentAgent  String    @default("claude") // 'claude', 'codex', 'hermes', etc.
+  status        String    @default("active") // 'active', 'ended', 'paused'
+  isPublic      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  endedAt       DateTime?
+
+  // Relations
+  userSessions  UserSession[]
+  messages      Message[]
+  sessionState  SessionState?
+
+  @@index([creatorId])
+  @@index([status])
+}
+
+// User-Session many-to-many relationship
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessionId     String
+  session       Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+  isActive      Boolean   @default(true)
+  cursorColor   String    @default("#0ea5e9") // Primary blue
+
+  @@unique([userId, sessionId])
+  @@index([sessionId])
+  @@index([userId])
+}
+
+// ============================================
+// Messages
+// ============================================
+
+model Message {
+  id            String    @id @default(cuid())
+  sessionId     String
+  session       Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  senderType    String    // 'user', 'agent', 'system'
+  senderId      String?   // User ID or agent identifier
+  senderName    String
+  content       String
+  agentType     String?   // Which agent generated this (if sender is agent)
+  metadata      Json?     // Additional data (e.g., code blocks, formatting)
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  replies       Message[] @relation("MessageReplies")
+  parentMessageId String?  @relation("MessageReplies", fields: [parentMessageId], references: [id])
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@index([senderType, senderId])
+}
+
+// ============================================
+// Session State (for persistence)
+// ============================================
+
+model SessionState {
+  id            String    @id @default(cuid())
+  sessionId     String    @unique
+  session       Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  stateData     Json      // Serialized Yjs document state
+  version       Int       @default(0)
+  updatedAt     DateTime  @updatedAt
+
+  @@index([sessionId])
+}
+
+// ============================================
+// Agent Configurations
+// ============================================
+
+model AgentConfig {
+  id            String    @id @default(cuid())
+  agentType     String    @unique // 'claude', 'codex', 'hermes', etc.
+  displayName   String
+  description   String
+  icon          String?
+  baseUrl       String    // API base URL
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Model configurations for this agent
+  models        AgentModel[]
+}
+
+model AgentModel {
+  id            String    @id @default(cuid())
+  agentConfigId String
+  agentConfig   AgentConfig @relation(fields: [agentConfigId], references: [id], onDelete: Cascade)
+  modelId       String    // e.g., 'claude-3-sonnet-20240229'
+  displayName   String
+  maxTokens     Int?
+  pricing       Json?     // Pricing information
+  isDefault     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+
+  @@unique([agentConfigId, modelId])
+  @@index([agentConfigId])
+}
+
+// ============================================
+// Integrations
+// ============================================
+
+model Integration {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider      String    // 'github', 'slack', 'notion', etc.
+  providerUserId String    // User ID on the provider side
+  accessToken   String    // Encrypted
+  refreshToken  String?   // Encrypted
+  tokenExpires  DateTime?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([userId, provider])
+  @@index([userId])
+}
+
+// ============================================
+// Audit Logs
+// ============================================
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id])
+  action        String    // 'create_session', 'delete_session', 'send_message', etc.
+  resourceType  String    // 'session', 'message', 'user', etc.
+  resourceId    String
+  metadata      Json?
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
+
+// ============================================
+// Rate Limiting
+// ============================================
+
+model RateLimit {
+  id            String    @id @default(cuid())
+  userId        String?
+  ipAddress     String?
+  endpoint      String    // Which endpoint is being rate limited
+  count         Int       @default(0)
+  windowStart   DateTime  @default(now())
+  expiresAt     DateTime
+
+  @@unique([userId, endpoint, windowStart])
+  @@unique([ipAddress, endpoint, windowStart])
+  @@index([userId])
+  @@index([expiresAt])
+}

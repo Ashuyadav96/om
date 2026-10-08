@@ -1,0 +1,30 @@
+# Backend Server Dockerfile
+FROM node:18-alpine AS base
+
+# Install dependencies
+FROM base AS deps
+WORKDIR /app
+COPY package.json ./
+COPY src/server/package.json ./src/server/package.json
+COPY src/shared/package.json ./src/shared/package.json
+RUN npm install
+
+# Build the application
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+RUN npm run build:server
+
+# Production image
+FROM base AS production
+WORKDIR /app
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/src/server/dist ./dist
+COPY --from=builder /app/src/server/prisma ./prisma
+COPY --from=builder /app/package.json ./
+
+# Install prisma client
+RUN npm install @prisma/client
+
+EXPOSE 4000
+CMD ["node", "dist/index.js"]

@@ -1,0 +1,58 @@
+{
+  "name": "multiplayer-ai-orchestration",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multiplayer AI Orchestration - Real-time collaboration for teams working with AI agents",
+  "workspaces": [
+    "src/client",
+    "src/server",
+    "src/shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd src/client && npm run dev",
+    "dev:server": "cd src/server && npm run dev",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "cd src/client && npm run build",
+    "build:server": "cd src/server && npm run build",
+    "lint": "npm run lint:client && npm run lint:server",
+    "lint:client": "cd src/client && npm run lint",
+    "lint:server": "cd src/server && npm run lint",
+    "test": "npm run test:client && npm run test:server",
+    "test:client": "cd src/client && npm run test",
+    "test:server": "cd src/server && npm run test",
+    "db:generate": "cd src/server && npx prisma generate",
+    "db:push": "cd src/server && npx prisma db push",
+    "db:migrate": "cd src/server && npx prisma migrate dev",
+    "db:studio": "cd src/server && npx prisma studio",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "clean": "rm -rf node_modules src/client/node_modules src/server/node_modules src/shared/node_modules"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.0.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "ai",
+    "collaboration",
+    "multiplayer",
+    "real-time",
+    "claude",
+    "codex",
+    "agents"
+  ],
+  "author": "Ashuyadav96",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ashuyadav96/om.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Ashuyadav96/om/issues"
+  },
+  "homepage": "https://github.com/Ashuyadav96/om#readme"
+}

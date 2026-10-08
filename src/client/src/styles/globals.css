@@ -1,0 +1,222 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles */
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+
+  body {
+    @apply bg-secondary-950 text-secondary-50;
+    font-feature-settings: "liga" 1, "calt" 1;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-secondary-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-secondary-600;
+  }
+
+  /* Focus styles */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-secondary-950;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-primary-500/30;
+  }
+}
+
+/* Custom component styles */
+@layer components {
+  /* Chat bubble */
+  .chat-bubble {
+    @apply px-4 py-2 rounded-lg max-w-[80%];
+  }
+
+  .chat-bubble-user {
+    @apply bg-primary-700 text-white ml-auto;
+  }
+
+  .chat-bubble-agent {
+    @apply bg-secondary-800 text-secondary-50 mr-auto;
+  }
+
+  .chat-bubble-system {
+    @apply bg-secondary-900 text-secondary-400 text-xs text-center mx-auto;
+  }
+
+  /* Input area */
+  .input-area {
+    @apply bg-secondary-900 border border-secondary-700 rounded-lg px-4 py-3;
+  }
+
+  .input-area:focus-within {
+    @apply border-primary-500 ring-1 ring-primary-500;
+  }
+
+  /* Button variants */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-colors duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-500 active:bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-800 text-secondary-50 hover:bg-secondary-700 active:bg-secondary-900;
+  }
+
+  .btn-ghost {
+    @apply text-secondary-400 hover:text-secondary-50 hover:bg-secondary-800/50;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-500 active:bg-red-700;
+  }
+
+  /* Card */
+  .card {
+    @apply bg-secondary-900 border border-secondary-800 rounded-lg;
+  }
+
+  /* Agent avatar */
+  .agent-avatar {
+    @apply w-8 h-8 rounded-full flex items-center justify-center;
+  }
+
+  .agent-avatar-claude {
+    @apply bg-gradient-to-br from-orange-500 to-amber-600;
+  }
+
+  .agent-avatar-codex {
+    @apply bg-gradient-to-br from-green-500 to-emerald-600;
+  }
+
+  .agent-avatar-hermes {
+    @apply bg-gradient-to-br from-purple-500 to-pink-600;
+  }
+
+  /* Cursor indicator */
+  .cursor-indicator {
+    @apply absolute w-2 h-2 rounded-full bg-primary-500 animate-pulse-slow;
+  }
+
+  /* Session list item */
+  .session-item {
+    @apply p-3 rounded-lg hover:bg-secondary-800/50 transition-colors duration-150 cursor-pointer;
+  }
+
+  .session-item-active {
+    @apply bg-secondary-800;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-primary-500 border-t-transparent;
+  }
+
+  /* Code block */
+  .code-block {
+    @apply bg-secondary-900 border border-secondary-700 rounded-lg p-4 overflow-x-auto;
+  }
+
+  .code-block-inline {
+    @apply bg-secondary-800 px-2 py-1 rounded;
+  }
+}
+
+/* Custom utility styles */
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent;
+  }
+
+  /* Glass effect */
+  .glass {
+    @apply bg-secondary-800/50 backdrop-blur-sm;
+  }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Smooth appearance */
+  .animate-in {
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  /* Typing indicator */
+  .typing-indicator {
+    @apply flex space-x-1;
+  }
+
+  .typing-indicator span {
+    @apply w-2 h-2 bg-secondary-400 rounded-full animate-bounce;
+    animation-delay: 0s, 0.2s, 0.4s;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSoft {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Syntax highlighting for code blocks */
+pre code {
+  @apply text-sm;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .chat-bubble {
+    @apply max-w-[90%];
+  }
+}
