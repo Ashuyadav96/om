@@ -1,5 +1,17 @@
 // Chat components
 export * from './Chat';
 
-// UI components will be added here
-// export * from './ui';
+// Agent components
+export * from './Agent';
+
+// UI components
+export * from './ui';
+
+// Loading components
+export * from './Loading';
+
+// Error handling
+export * from './ErrorBoundary';
+
+// Accessibility
+export * from './Accessibility';
